@@ -1,0 +1,46 @@
+# Scratch test directory — never committed
+skill_swap_app/scratch/
+
+# Agent inbox — Jalawan drops temp files here, not for git
+.agent/inbox/*
+!.agent/inbox/README.md
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment files — never committed
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Turbo cache
+.turbo/
+
+# Test coverage
+coverage/
+playwright-report/
+test-results/
