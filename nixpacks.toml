@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install -g pnpm", "cd skill_swap_app && pnpm install"]
+
+[phases.build]
+cmds = ["cd skill_swap_app && pnpm --filter @skillswap/api build"]
+
+[start]
+cmd = "node skill_swap_app/apps/api/dist/index.js"
