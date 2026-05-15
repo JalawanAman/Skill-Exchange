@@ -1,10 +1,11 @@
-import express from 'express'
+import express, { Express } from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import { clerkMiddleware } from '@clerk/express'
+import { webhookRoutes } from './routes/webhooks'
 
-const app = express()
+const app: Express = express()
 
 // Security headers
 app.use(helmet())
@@ -27,7 +28,10 @@ app.use(
   })
 )
 
-// Body parsing
+// Webhooks must receive raw body for Svix signature verification — registered before JSON parser
+app.use('/webhooks', express.raw({ type: 'application/json' }), webhookRoutes)
+
+// Body parsing for all other routes
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -40,7 +44,6 @@ app.get('/health', (_req, res) => {
 })
 
 // Routes — added per milestone
-// app.use('/api/auth', authRoutes)
 // app.use('/api/users', userRoutes)
 // app.use('/api/skills', skillRoutes)
 // app.use('/api/matches', matchRoutes)
