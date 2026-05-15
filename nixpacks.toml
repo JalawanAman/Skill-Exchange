@@ -2,10 +2,16 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm install -g pnpm", "cd skill_swap_app && pnpm install"]
+cmds = [
+  "npm install -g pnpm@10.33.3",
+  "cd skill_swap_app && pnpm install --frozen-lockfile"
+]
 
 [phases.build]
 cmds = ["cd skill_swap_app && pnpm --filter @skillswap/api build"]
+
+[phases.npm_install]
+cmds = []
 
 [start]
 cmd = "node skill_swap_app/apps/api/dist/index.js"
