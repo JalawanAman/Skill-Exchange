@@ -7,6 +7,9 @@ import { webhookRoutes } from './routes/webhooks'
 
 const app: Express = express()
 
+// Trust Railway/Render proxy — required for rate limiter and real IP detection
+app.set('trust proxy', 1)
+
 // Security headers
 app.use(helmet())
 
