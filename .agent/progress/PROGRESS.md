@@ -1,22 +1,22 @@
 # Build Progress
 
 **Founder:** Jalawan Aman Khan  
-**Last updated:** 2026-05-05  
-**Current phase:** Pre-development
+**Last updated:** 2026-05-12  
+**Current phase:** M1 — Auth & Infrastructure Setup (in progress)
 
 ---
 
 ## Overall Status
 
 ```
-[■■□□□□□□□] Phase 0 complete — Founder Docs done, repo being set up
+[■■■□□□□□□] M1 ~60% done — Clerk + Neon wired, webhook + deploy pending
 ```
 
 | Milestone | Status | Gate Passed | Notes |
 |---|---|---|---|
 | Founder Docs | ✅ Complete | — | All 10 docs written |
-| Repo structure | 🔄 In progress | — | Dir map finalised, git init pending |
-| M1 — Auth & Setup | ⬜ Not started | ❌ | Starts after repo init |
+| Repo & Monorepo | ✅ Complete | — | pnpm workspaces, Turborepo, branches |
+| M1 — Auth & Setup | 🔄 In progress | ❌ | Clerk + Neon done, webhook pending deploy |
 | M2 — Profiles | ⬜ Not started | ❌ | |
 | M3 — Matching | ⬜ Not started | ❌ | |
 | M4 — Connections | ⬜ Not started | ❌ | |
@@ -31,40 +31,40 @@
 ## What Is Done
 
 ### Founder Docs (`idea/docs/`)
-- `README.md` — index and navigation
-- `00_RULES_AND_GATES.md` — project law and gate protocol
-- `01_MASTER_PLAN.md` — vision, directory map, risk register
-- `02_ARCHITECTURE.md` — full system + ASCII diagrams
-- `03_TECH_STACK.md` — every tool with free tier limits
-- `04_DATABASE_SCHEMA.md` — all 12 PostgreSQL tables
-- `05_API_SPEC.md` — all REST endpoints + WebSocket events
-- `06_REQUIREMENTS.md` — 70+ functional and non-functional requirements
-- `07_MILESTONES.md` — 9 milestones with hard-stop gate tests
-- `08_TESTING_STRATEGY.md` — unit, integration, e2e strategy
-- `09_AI_INTEGRATIONS.md` — 5 free AI features with fallbacks
-- `10_DEPLOYMENT.md` — full zero-cost deployment plan
+- All 10 docs written (README, rules, plan, architecture, stack, schema, API spec, requirements, milestones, testing, AI, deployment)
 
-### Repo Structure
-- Directory map finalised and documented
-- `.gitignore` created at repo root
-- `.agent/` directory initialised
-- `skill_swap_app/scratch/` created for temp testing
-- Renamed codebase dir to `skill_swap_app/`
+### Repo & Monorepo (`skill_swap_app/`)
+- pnpm workspaces + Turborepo configured
+- Branch strategy: main → staging → dev → feat/m1-setup (active)
+- All deps installed (`pnpm install` complete)
+- Shared types package (`@skillswap/shared`) scaffolded
+- `apps/api/` and `apps/web/` fully scaffolded with configs
+
+### M1 — Auth & Infrastructure
+- **Clerk** — account created, keys in `.env` files, connection verified ✅
+- **Clerk → Next.js** — `ClerkProvider` in layout, middleware protecting routes, sign-in/sign-up pages, dashboard page ✅
+- **Neon DB** — project created (Singapore), `DATABASE_URL` in `.env`, connection verified ✅
+- **Drizzle schema** — `users` + `credit_transactions` tables written ✅
+- **First migration** — `drizzle-kit push:pg` ran successfully, tables live on Neon ✅
+- **Tailwind** — config + PostCSS set up, globals.css created ✅
 
 ---
 
-## What Is Next
+## What Is Next (M1 remaining)
 
-1. `git init` at `Skill-Exchange/` root
-2. Push to GitHub (`gh repo create skillswap --public --source=. --push`)
-3. Start **M1** — monorepo scaffold, pnpm workspace, Turborepo, TypeScript config
-4. Set up external services: Neon, Clerk, Cloudinary, Upstash, Resend
+1. Write Clerk webhook endpoint (`POST /webhooks/clerk`) — code only, no test yet
+2. Wire Express properly — ensure dotenv loads, routes mounted, health check works
+3. Deploy API to **Render** — get permanent public URL
+4. Register Clerk webhook in dashboard with Render URL → test live
+5. Deploy web to **Vercel**
+6. Run M1 gate tests
 
 ---
 
 ## Blockers
 
-None currently.
+- Clerk webhook cannot be tested locally (no static public URL without paid ngrok)
+- Decision: write webhook code now, test after Render deploy
 
 ---
 
