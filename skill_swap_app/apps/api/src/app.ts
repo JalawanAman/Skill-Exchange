@@ -38,13 +38,16 @@ app.use('/webhooks', express.raw({ type: 'application/json' }), webhookRoutes)
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-// Clerk auth middleware
-app.use(clerkMiddleware())
-
-// Health check — no auth required
+// Health check — before Clerk middleware, no auth required
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
+
+// Clerk auth middleware
+app.use(clerkMiddleware({
+  publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
+  secretKey: process.env.CLERK_SECRET_KEY,
+}))
 
 // Routes — added per milestone
 // app.use('/api/users', userRoutes)
