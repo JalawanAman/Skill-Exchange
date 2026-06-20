@@ -80,4 +80,22 @@ Format: decision made → why → alternatives considered.
 
 ---
 
-*Add new decisions as D-010, D-011, etc.*
+## D-010 — Railway over Render for API hosting
+**Date:** 2026-05-16  
+**Decision:** Switched from Render to Railway for API deployment  
+**Why:** Render now requires a credit card even for free tier web services — $0 infra rule broken  
+**Alternatives considered:** Render (original plan), Fly.io  
+**Why rejected:** Render needs card. Railway has a true no-card free tier  
+
+---
+
+## D-011 — Use corepack to activate pnpm on Railway (not npm install -g)
+**Date:** 2026-05-16  
+**Decision:** Use `corepack enable && corepack prepare pnpm@10.33.3 --activate` in Railway build command  
+**Why:** Railway/Nixpacks build environment runs each command in its own shell layer. `npm install -g pnpm` installs pnpm but the global bin path (`$(npm prefix -g)/bin`) is not automatically added to PATH in subsequent commands — so `pnpm` is found but not executable (exit code 127). Corepack is built into Node 20, activates pnpm directly into the system PATH, and survives across shell steps.  
+**Root cause of 8 failed builds:** Assumed global npm install would put pnpm on PATH — it does locally but not inside Docker build layers used by Nixpacks  
+**Fix that worked:** `corepack enable && corepack prepare pnpm@10.33.3 --activate && cd skill_swap_app && pnpm install --no-frozen-lockfile && pnpm --filter @skillswap/api build`  
+
+---
+
+*Add new decisions as D-012, D-013, etc.*
