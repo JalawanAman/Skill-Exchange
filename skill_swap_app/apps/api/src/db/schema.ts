@@ -23,7 +23,7 @@ export const users = pgTable('users', {
   bio: text('bio'),
   timezone: text('timezone').default('UTC'),
   role: userRoleEnum('role').default('user').notNull(),
-  creditBalance: integer('credit_balance').default(100).notNull(), // 100 signup bonus
+  creditBalance: integer('credit_balance').default(20).notNull(), // 20 signup bonus (schema doc 04)
   isOnboarded: boolean('is_onboarded').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

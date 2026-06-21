@@ -74,7 +74,7 @@ async function handleUserCreated(data: ClerkUserPayload) {
   }
 
   const txId = generateId('ctx')
-  const SIGNUP_BONUS = 100
+  const SIGNUP_BONUS = 20
 
   // Insert user + signup bonus credit transaction atomically
   await db.transaction(async (tx) => {
