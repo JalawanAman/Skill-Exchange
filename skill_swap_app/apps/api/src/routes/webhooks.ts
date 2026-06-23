@@ -76,26 +76,27 @@ async function handleUserCreated(data: ClerkUserPayload) {
   const txId = generateId('ctx')
   const SIGNUP_BONUS = 20
 
-  // Insert user + signup bonus credit transaction atomically
-  await db.transaction(async (tx) => {
-    await tx.insert(users).values({
+  // Insert user + signup bonus credit transaction atomically.
+  // The neon-http driver has no interactive transactions; db.batch runs both
+  // statements in a single atomic request (order preserved: user before its tx).
+  await db.batch([
+    db.insert(users).values({
       id: data.id,
       email: primaryEmail,
       displayName: [data.first_name, data.last_name].filter(Boolean).join(' ') || null,
       avatarUrl: data.image_url || null,
       creditBalance: SIGNUP_BONUS,
       isOnboarded: false,
-    })
-
-    await tx.insert(creditTransactions).values({
+    }),
+    db.insert(creditTransactions).values({
       id: txId,
       userId: data.id,
       type: 'signup_bonus',
       amount: SIGNUP_BONUS,
       balanceAfter: SIGNUP_BONUS,
       description: 'Welcome bonus on signup',
-    })
-  })
+    }),
+  ])
 
   console.log(`User created: ${data.id} (${primaryEmail}) — ${SIGNUP_BONUS} credits granted`)
 }
