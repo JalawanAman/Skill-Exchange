@@ -1,6 +1,7 @@
 # PR-001 — M1: Auth & Infrastructure Setup
 
-**Branch:** `feat/m1-setup` → `main`  
+**Branch:** `feat/m1-setup` → `dev` (then promoted up the chain `dev` → `staging` → `main`)  
+**Merge plan:** Merge this PR into `dev` first. Promote `dev` → `staging` → `main` afterward, as gates pass.  
 **Date:** 2026-05-16  
 **Milestone:** M1 — Auth & Infrastructure  
 **Status:** Ready to merge

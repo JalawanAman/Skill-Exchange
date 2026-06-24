@@ -12,7 +12,8 @@
     "test:run": "vitest run",
     "db:push": "drizzle-kit push:pg",
     "db:generate": "drizzle-kit generate:pg",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "logs": "tsx scripts/read-logs.ts"
   },
   "dependencies": {
     "@skillswap/shared": "workspace:*",
