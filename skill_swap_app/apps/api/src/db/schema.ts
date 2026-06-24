@@ -1,8 +1,10 @@
-import { pgTable, text, integer, timestamp, pgEnum, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, text, integer, timestamp, pgEnum, boolean, jsonb, index } from 'drizzle-orm/pg-core'
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin'])
+
+export const logLevelEnum = pgEnum('log_level', ['debug', 'info', 'warn', 'error'])
 
 export const creditTxTypeEnum = pgEnum('credit_tx_type', [
   'signup_bonus',
@@ -42,9 +44,30 @@ export const creditTransactions = pgTable('credit_transactions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 })
 
+// ─── Observability: logs (rolling 7-day retention, see lib/logger.ts) ─────────
+
+export const logs = pgTable(
+  'logs',
+  {
+    id: text('id').primaryKey(),                          // log_...
+    level: logLevelEnum('level').notNull(),
+    source: text('source'),                               // e.g. 'webhook:clerk', 'http', 'api:users'
+    message: text('message').notNull(),
+    context: jsonb('context'),                            // arbitrary structured detail (errors, payloads, ids)
+    requestId: text('request_id'),                        // correlates all logs within one request
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    createdAtIdx: index('logs_created_at_idx').on(t.createdAt),  // fast recent-reads + retention purge
+    levelIdx: index('logs_level_idx').on(t.level),
+  })
+)
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type CreditTransaction = typeof creditTransactions.$inferSelect
 export type NewCreditTransaction = typeof creditTransactions.$inferInsert
+export type Log = typeof logs.$inferSelect
+export type NewLog = typeof logs.$inferInsert

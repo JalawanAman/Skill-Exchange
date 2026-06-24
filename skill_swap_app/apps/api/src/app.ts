@@ -4,11 +4,16 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import { clerkMiddleware } from '@clerk/express'
 import { webhookRoutes } from './routes/webhooks'
+import { requestLogger } from './middleware/logging'
+import { logger } from './lib/logger'
 
 const app: Express = express()
 
 // Trust Railway/Render proxy — required for rate limiter and real IP detection
 app.set('trust proxy', 1)
+
+// Request logging + correlation id — first, so every request is captured
+app.use(requestLogger)
 
 // Security headers
 app.use(helmet())
@@ -65,8 +70,12 @@ app.use((_req, res) => {
 })
 
 // Global error handler
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err.stack)
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  void logger.exception('unhandled error', err, {
+    source: 'http',
+    requestId: res.locals.requestId as string | undefined,
+    context: { method: req.method, path: req.originalUrl },
+  })
   res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' })
 })
 
