@@ -15,6 +15,15 @@ adds to this list over time; the agent treats these as law.
    specific merge**. The founder decides what gets promoted up the chain, and
    when — and may perform merges himself via GitHub PRs.
 
+## Communication
+
+3. **Keep responses short and top-down.** Lead with the conclusion in plain,
+   understandable terms; give the high-level view first. Don't dump deep or
+   over-specific detail by default — filter out the irrelevant so the founder
+   isn't overwhelmed or confused. This applies to the *response only*, not the
+   analysis: keep analyzing thoroughly internally, just communicate concisely.
+   When the founder wants depth, he'll ask — then go deep on exactly that point.
+
 ---
 
 _Last updated: 2026-06-24_

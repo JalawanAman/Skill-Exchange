@@ -1,73 +1,54 @@
 # Build Progress
 
 **Founder:** Jalawan Aman Khan  
-**Last updated:** 2026-05-12  
-**Current phase:** M1 — Auth & Infrastructure Setup (in progress)
+**Last updated:** 2026-06-24  
+**Current phase:** M1 — Auth & Infrastructure ✅ GATE PASSED
 
 ---
 
 ## Overall Status
 
 ```
-[■■■□□□□□□] M1 ~60% done — Clerk + Neon wired, webhook + deploy pending
+[■■■■■■■■■■] M1 100% — GATE M1 fully green (all A/B/C). Next: deploy final fixes (feat→dev), then M2.
 ```
 
-| Milestone | Status | Gate Passed | Notes |
+| Milestone | Status | Gate | Notes |
 |---|---|---|---|
-| Founder Docs | ✅ Complete | — | All 10 docs written |
-| Repo & Monorepo | ✅ Complete | — | pnpm workspaces, Turborepo, branches |
-| M1 — Auth & Setup | 🔄 In progress | ❌ | Clerk + Neon done, webhook pending deploy |
-| M2 — Profiles | ⬜ Not started | ❌ | |
-| M3 — Matching | ⬜ Not started | ❌ | |
-| M4 — Connections | ⬜ Not started | ❌ | |
-| M5 — Live Chat | ⬜ Not started | ❌ | |
-| M6 — Bookings | ⬜ Not started | ❌ | |
-| M7 — Credits | ⬜ Not started | ❌ | |
-| M8 — Reviews & Notifications | ⬜ Not started | ❌ | |
-| M9 — Polish & Launch | ⬜ Not started | ❌ | |
+| Founder Docs | ✅ | — | All 10 docs |
+| Repo & Monorepo | ✅ | — | pnpm + Turborepo; `dev` = deploy branch |
+| M1 — Auth & Setup | ✅ Done | ✅ Passed | Full auth + backend live; gate all green |
+| M2 — Profiles | ⬜ Next | ❌ | Triggers PT-001 (onboarding redirect) |
+| M3–M9 | ⬜ | ❌ | |
 
 ---
 
-## What Is Done
+## M1 — Done
 
-### Founder Docs (`idea/docs/`)
-- All 10 docs written (README, rules, plan, architecture, stack, schema, API spec, requirements, milestones, testing, AI, deployment)
+- **Auth** — Clerk email/password + Google OAuth; middleware guard; sign-in/up pages redirect already-signed-in users to `/dashboard`
+- **Webhook** (`/webhooks/clerk`) — Svix-verified, idempotent, creates user + 20-credit bonus
+- **API** — `GET /api/users/me` (401 / profile); Clerk middleware on routes
+- **Dashboard** — live DB data (name, credits) via server-side authed fetch
+- **Logging** — DB-backed `logs` table, 7-day retention, `pnpm logs` reader
+- **Deploys** — API on Railway, web on Vercel, both auto-deploy `dev`
+- **Quality** — `tsc` + ESLint clean (both apps); `.env.example` audited; GitHub Actions CI (lint+typecheck) green
 
-### Repo & Monorepo (`skill_swap_app/`)
-- pnpm workspaces + Turborepo configured
-- Branch strategy: main → staging → dev → feat/m1-setup (active)
-- All deps installed (`pnpm install` complete)
-- Shared types package (`@skillswap/shared`) scaffolded
-- `apps/api/` and `apps/web/` fully scaffolded with configs
-
-### M1 — Auth & Infrastructure
-- **Clerk** — account created, keys in `.env` files, connection verified ✅
-- **Clerk → Next.js** — `ClerkProvider` in layout, middleware protecting routes, sign-in/sign-up pages, dashboard page ✅
-- **Neon DB** — project created (Singapore), `DATABASE_URL` in `.env`, connection verified ✅
-- **Drizzle schema** — `users` + `credit_transactions` tables written ✅
-- **First migration** — `drizzle-kit push:pg` ran successfully, tables live on Neon ✅
-- **Tailwind** — config + PostCSS set up, globals.css created ✅
+### GATE M1 — ✅ all green
+- **A:** T01 ✅ T02 ✅ T03 ✅ T04 ✅ T05 ✅ T06 ✅ T07 ✅
+- **B:** Q01 ✅ Q02 ✅ Q03 ✅
+- **C:** C01 ✅ C02 ✅ C03 ✅
 
 ---
 
-## What Is Next (M1 remaining)
+## Next
 
-1. Write Clerk webhook endpoint (`POST /webhooks/clerk`) — code only, no test yet
-2. Wire Express properly — ensure dotenv loads, routes mounted, health check works
-3. Deploy API to **Render** — get permanent public URL
-4. Register Clerk webhook in dashboard with Render URL → test live
-5. Deploy web to **Vercel**
-6. Run M1 gate tests
+1. **Deploy final fixes**: merge `feat → dev` (ships T05 + blank-page fix + ESLint/CI) — awaiting founder go-ahead
+2. Final live verify: sign-in → `/dashboard`, sign-out → `/sign-in`
+3. Start **M2 — Profiles & Onboarding** (triggers PT-001)
 
 ---
 
 ## Blockers
+- None.
 
-- Clerk webhook cannot be tested locally (no static public URL without paid ngrok)
-- Decision: write webhook code now, test after Render deploy
-
----
-
-## Key Decisions Made So Far
-
-→ See `decisions/DECISIONS.md` for full log
+## Decisions
+→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk` (not `/api/auth/sync`); 20-credit signup bonus.
