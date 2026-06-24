@@ -98,6 +98,24 @@ async function handleUserCreated(data: ClerkUserPayload, requestId?: string) {
     throw new Error(`No primary email found for Clerk user ${data.id}`)
   }
 
+  // Idempotency: Clerk re-delivers events (retries, replays), so the same
+  // user.created can arrive more than once. If this user already exists, do
+  // nothing — don't error, and don't re-grant the signup bonus.
+  const existing = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, data.id))
+    .limit(1)
+
+  if (existing.length > 0) {
+    void logger.info('user.created ignored — already exists (idempotent)', {
+      source: 'webhook:clerk',
+      requestId,
+      context: { clerkUserId: data.id },
+    })
+    return
+  }
+
   const txId = generateId('ctx')
   const SIGNUP_BONUS = 20
 

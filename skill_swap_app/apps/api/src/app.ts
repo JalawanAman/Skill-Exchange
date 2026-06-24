@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import { clerkMiddleware } from '@clerk/express'
 import { webhookRoutes } from './routes/webhooks'
+import { userRoutes } from './routes/users'
 import { requestLogger } from './middleware/logging'
 import { logger } from './lib/logger'
 
@@ -55,7 +56,7 @@ app.use(clerkMiddleware({
 }))
 
 // Routes — added per milestone
-// app.use('/api/users', userRoutes)
+app.use('/api/users', userRoutes)
 // app.use('/api/skills', skillRoutes)
 // app.use('/api/matches', matchRoutes)
 // app.use('/api/conversations', conversationRoutes)
