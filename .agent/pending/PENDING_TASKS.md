@@ -13,7 +13,7 @@ in a trigger, and proactively remind the founder when a trigger condition is met
 
 | | |
 |---|---|
-| **Status** | ⏸ Deferred — waiting on trigger |
+| **Status** | ✅ Done in code (2026-06-25, M2 chunk 4) — only Vercel env var left |
 | **Created** | 2026-06-21 |
 | **Deferred during** | M1 (Auth & Infrastructure) |
 | **Trigger** | Start of **M2 — Profiles & Onboarding**, specifically the task *"Build onboarding flow (`/onboarding`)"* |
