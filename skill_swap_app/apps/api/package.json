@@ -13,7 +13,8 @@
     "db:push": "drizzle-kit push:pg",
     "db:generate": "drizzle-kit generate:pg",
     "db:studio": "drizzle-kit studio",
-    "logs": "tsx scripts/read-logs.ts"
+    "logs": "tsx scripts/read-logs.ts",
+    "seed:skills": "tsx scripts/seed-skills.ts"
   },
   "dependencies": {
     "@skillswap/shared": "workspace:*",
