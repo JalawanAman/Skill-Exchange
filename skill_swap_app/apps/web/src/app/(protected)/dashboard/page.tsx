@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { UserButton } from '@clerk/nextjs'
 import { serverApiFetch, ApiError } from '@/lib/api-server'
 
@@ -24,6 +25,9 @@ export default async function DashboardPage() {
   } catch (err) {
     errorStatus = err instanceof ApiError ? err.status : -1
   }
+
+  // New users must finish onboarding before seeing the dashboard.
+  if (user && !user.isOnboarded) redirect('/onboarding')
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
