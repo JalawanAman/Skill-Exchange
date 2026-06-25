@@ -6,6 +6,7 @@ type Offer = { id: string; skillName: string; proficiency: string }
 type Want = { id: string; skillName: string; levelTarget: string }
 type MeResponse = {
   user: {
+    avatarUrl: string | null
     displayName: string | null
     location: string | null
     timezone: string | null

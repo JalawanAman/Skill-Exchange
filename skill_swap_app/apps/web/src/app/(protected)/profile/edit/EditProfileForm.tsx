@@ -1,14 +1,15 @@
 'use client'
 
-import { useMemo, useState, type FormEvent } from 'react'
+import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { updateProfile, addOffer, removeOffer, addWant, removeWant } from './actions'
+import { updateProfile, addOffer, removeOffer, addWant, removeWant, updateAvatar } from './actions'
 
 type Offer = { id: string; skillName: string; proficiency: string }
 type Want = { id: string; skillName: string; levelTarget: string }
 type Skill = { id: string; name: string; category: string }
 type Me = {
+  avatarUrl: string | null
   displayName: string | null
   location: string | null
   timezone: string | null
@@ -29,6 +30,37 @@ export default function EditProfileForm({ me, skills }: { me: Me; skills: Skill[
   const [savingProfile, setSavingProfile] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+  const cloudinaryReady = Boolean(cloudName && cloudName !== 'your_cloud_name' && uploadPreset)
+
+  async function handlePhoto(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!cloudinaryReady) {
+      setMsg('Photo upload needs Cloudinary configured (env vars).')
+      return
+    }
+    setUploading(true)
+    setMsg(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('upload_preset', uploadPreset as string)
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!data.secure_url) throw new Error('no url')
+      await updateAvatar(data.secure_url as string)
+      setMsg('Photo updated.')
+      router.refresh()
+    } catch {
+      setMsg('Photo upload failed — please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const [newOfferSkill, setNewOfferSkill] = useState('')
   const [newOfferProf, setNewOfferProf] = useState('intermediate')
@@ -100,6 +132,23 @@ export default function EditProfileForm({ me, skills }: { me: Me; skills: Skill[
         </div>
 
         {msg && <p className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-700">{msg}</p>}
+
+        {/* Photo */}
+        <div className="flex items-center gap-4 rounded-xl border bg-white p-6">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {me.avatarUrl ? (
+            <img src={me.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+          ) : (
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-200 text-gray-400">?</div>
+          )}
+          <div>
+            <label className="cursor-pointer text-sm font-medium text-blue-600">
+              {uploading ? 'Uploading…' : 'Change photo'}
+              <input type="file" accept="image/*" onChange={handlePhoto} disabled={uploading || !cloudinaryReady} className="hidden" />
+            </label>
+            {!cloudinaryReady && <p className="text-xs text-gray-400">Set Cloudinary env vars to enable.</p>}
+          </div>
+        </div>
 
         {/* Profile fields */}
         <form onSubmit={saveProfile} className="space-y-4 rounded-xl border bg-white p-6">

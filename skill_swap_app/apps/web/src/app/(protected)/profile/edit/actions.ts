@@ -29,3 +29,7 @@ export async function addWant(input: { skillId: string; levelTarget: string }): 
 export async function removeWant(id: string): Promise<void> {
   await serverApiFetch(`/api/skills/wants/${id}`, { method: 'DELETE' })
 }
+
+export async function updateAvatar(avatarUrl: string): Promise<void> {
+  await serverApiFetch('/api/users/me', { method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ avatarUrl }) })
+}
