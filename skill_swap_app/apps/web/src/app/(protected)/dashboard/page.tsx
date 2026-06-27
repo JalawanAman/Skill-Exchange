@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import { UserButton } from '@clerk/nextjs'
 import { serverApiFetch, ApiError } from '@/lib/api-server'
 
 type MeResponse = {
@@ -32,10 +31,7 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <UserButton afterSignOutUrl="/sign-in" />
-        </div>
+        <h1 className="mb-8 text-3xl font-bold text-gray-900">Dashboard</h1>
 
         {user ? (
           <div className="space-y-6">
