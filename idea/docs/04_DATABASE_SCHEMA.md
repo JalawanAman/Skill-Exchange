@@ -24,13 +24,33 @@ users
 
 ---
 
+## ⚠️ Implementation Convention (read before adding any table)
+
+The SQL below was the original design. The **shipped implementation deliberately
+diverges on IDs**, and this convention is now LAW for every new table (M3+):
+
+- **IDs are `text`, never `uuid`.** No `gen_random_uuid()`.
+- **`users.id` IS the Clerk user ID** (e.g. `user_2abc…`) — there is **no separate
+  `clerk_id` column**; the Clerk ID is the primary key.
+- **Every other table uses a prefixed text ID** generated in app code via
+  `generateId('<prefix>')` — e.g. `sko_…` (skill_offers), `skw_…` (skill_wants),
+  `avl_…` (availability), `ctx_…` (credit_transactions); `skills` uses `skill_<slug>`.
+- **All foreign keys are `text`**, referencing the parent's text PK
+  (e.g. `skill_offers.user_id text NOT NULL REFERENCES users(id)`), with
+  `ON DELETE CASCADE` to the owning user.
+- **`apps/api/src/db/schema.ts` (Drizzle) is the source of truth.** Where this
+  doc's SQL and the Drizzle schema disagree, **the Drizzle schema wins.**
+
+➡️ When adding M3+ tables (matches, sessions, reviews…), use **text** PKs/FKs.
+
+---
+
 ## Tables
 
 ### `users`
 ```sql
 CREATE TABLE users (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  clerk_id        VARCHAR(255) UNIQUE NOT NULL,   -- Clerk user ID
+  id              TEXT PRIMARY KEY,                -- = Clerk user ID (e.g. user_2abc…). NO separate clerk_id; see Convention above.
   username        VARCHAR(50)  UNIQUE NOT NULL,
   email           VARCHAR(255) UNIQUE NOT NULL,
   full_name       VARCHAR(100) NOT NULL,
