@@ -120,26 +120,24 @@ async function handleUserCreated(data: ClerkUserPayload, requestId?: string) {
   const SIGNUP_BONUS = 20
 
   // Insert user + signup bonus credit transaction atomically.
-  // The neon-http driver has no interactive transactions; db.batch runs both
-  // statements in a single atomic request (order preserved: user before its tx).
-  await db.batch([
-    db.insert(users).values({
+  await db.transaction(async (tx) => {
+    await tx.insert(users).values({
       id: data.id,
       email: primaryEmail,
       displayName: [data.first_name, data.last_name].filter(Boolean).join(' ') || null,
       avatarUrl: data.image_url || null,
       creditBalance: SIGNUP_BONUS,
       isOnboarded: false,
-    }),
-    db.insert(creditTransactions).values({
+    })
+    await tx.insert(creditTransactions).values({
       id: txId,
       userId: data.id,
       type: 'signup_bonus',
       amount: SIGNUP_BONUS,
       balanceAfter: SIGNUP_BONUS,
       description: 'Welcome bonus on signup',
-    }),
-  ])
+    })
+  })
 
   void logger.info('user created + signup bonus granted', {
     source: 'webhook:clerk',
