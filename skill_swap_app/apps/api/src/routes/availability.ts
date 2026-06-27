@@ -44,15 +44,13 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
     const slots = parsed.data.slots
     const rowsToInsert = slots.map((s) => ({ id: generateId('avl'), userId, ...s }))
 
-    // Replace the whole schedule. neon-http has no interactive tx; db.batch is atomic.
-    if (rowsToInsert.length > 0) {
-      await db.batch([
-        db.delete(availability).where(eq(availability.userId, userId)),
-        db.insert(availability).values(rowsToInsert),
-      ])
-    } else {
-      await db.delete(availability).where(eq(availability.userId, userId))
-    }
+    // Replace the whole schedule atomically.
+    await db.transaction(async (tx) => {
+      await tx.delete(availability).where(eq(availability.userId, userId))
+      if (rowsToInsert.length > 0) {
+        await tx.insert(availability).values(rowsToInsert)
+      }
+    })
 
     const rows = await db
       .select()
