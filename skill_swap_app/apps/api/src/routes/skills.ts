@@ -6,6 +6,7 @@ import { db } from '../db'
 import { skills, skillOffers, skillWants } from '../db/schema'
 import { generateId } from '../lib/ids'
 import { logger } from '../lib/logger'
+import { refreshMatchesInBackground } from '../services/matching.service'
 
 const router: IRouter = Router()
 
@@ -73,6 +74,7 @@ router.post('/offers', async (req: Request, res: Response, next: NextFunction) =
     }
 
     void logger.info('skill offer added', { source: 'api:skills', requestId, context: { userId, skillId: parsed.data.skillId } })
+    refreshMatchesInBackground(userId, requestId)
     return res.status(201).json({ offer })
   } catch (err) {
     return next(err)
@@ -93,6 +95,7 @@ router.delete('/offers/:id', async (req: Request, res: Response, next: NextFunct
     if (deleted.length === 0) {
       return res.status(404).json({ error: 'Offer not found', code: 'NOT_FOUND' })
     }
+    refreshMatchesInBackground(userId)
     return res.json({ deleted: true })
   } catch (err) {
     return next(err)
@@ -134,6 +137,7 @@ router.post('/wants', async (req: Request, res: Response, next: NextFunction) =>
     }
 
     void logger.info('skill want added', { source: 'api:skills', requestId, context: { userId, skillId: parsed.data.skillId } })
+    refreshMatchesInBackground(userId, requestId)
     return res.status(201).json({ want })
   } catch (err) {
     return next(err)
@@ -154,6 +158,7 @@ router.delete('/wants/:id', async (req: Request, res: Response, next: NextFuncti
     if (deleted.length === 0) {
       return res.status(404).json({ error: 'Want not found', code: 'NOT_FOUND' })
     }
+    refreshMatchesInBackground(userId)
     return res.json({ deleted: true })
   } catch (err) {
     return next(err)

@@ -29,6 +29,9 @@ export const creditTxTypeEnum = pgEnum('credit_tx_type', [
 export const proficiencyEnum = pgEnum('proficiency', ['beginner', 'intermediate', 'expert'])
 export const wantLevelEnum = pgEnum('want_level', ['beginner', 'intermediate', 'advanced'])
 
+// M3: a surfaced match's lifecycle. ('connected' lives in M4's connections flow.)
+export const matchStatusEnum = pgEnum('match_status', ['active', 'dismissed'])
+
 // ─── M1: users ───────────────────────────────────────────────────────────────
 
 export const users = pgTable('users', {
@@ -159,6 +162,50 @@ export const availability = pgTable(
   })
 )
 
+// ─── M3: matches (result of the matching engine) ──────────────────────────────
+
+// Directional: one row = "userId should see matchedUserId". Each user owns their
+// own match rows, so the feed is a simple `WHERE user_id = me` and either side can
+// dismiss independently. (Diverges from doc 04's symmetric user_a/user_b design —
+// schema.ts is the source of truth; see the convention note in the doc.)
+export const matches = pgTable(
+  'matches',
+  {
+    id: text('id').primaryKey(),                          // mat_...
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    matchedUserId: text('matched_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    compatibilityScore: integer('compatibility_score').notNull(),  // 0–100
+    scoreBreakdown: jsonb('score_breakdown'),             // { mutual, availability, language, experience, reputation }
+    matchedSkills: jsonb('matched_skills').notNull().default([]),   // [{ skillId, skillName, direction }]
+    sharedLanguages: text('shared_languages').array().notNull().default([]),
+    status: matchStatusEnum('status').default('active').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    userIdx: index('idx_matches_user_id').on(t.userId),
+    scoreIdx: index('idx_matches_score').on(t.compatibilityScore),
+    pairUnique: unique('uq_matches_pair').on(t.userId, t.matchedUserId),
+  })
+)
+
+// ─── M3: blocks (excluded from matching + browse, both directions) ─────────────
+
+export const blocks = pgTable(
+  'blocks',
+  {
+    id: text('id').primaryKey(),                          // blk_...
+    blockerId: text('blocker_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    blockedId: text('blocked_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    blockerIdx: index('idx_blocks_blocker_id').on(t.blockerId),
+    blockedIdx: index('idx_blocks_blocked_id').on(t.blockedId),
+    pairUnique: unique('uq_blocks_pair').on(t.blockerId, t.blockedId),
+  })
+)
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type User = typeof users.$inferSelect
@@ -175,3 +222,7 @@ export type SkillWant = typeof skillWants.$inferSelect
 export type NewSkillWant = typeof skillWants.$inferInsert
 export type Availability = typeof availability.$inferSelect
 export type NewAvailability = typeof availability.$inferInsert
+export type Match = typeof matches.$inferSelect
+export type NewMatch = typeof matches.$inferInsert
+export type Block = typeof blocks.$inferSelect
+export type NewBlock = typeof blocks.$inferInsert

@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate:pg",
     "db:studio": "drizzle-kit studio",
     "logs": "tsx scripts/read-logs.ts",
-    "seed:skills": "tsx scripts/seed-skills.ts"
+    "seed:skills": "tsx scripts/seed-skills.ts",
+    "seed:test-match": "tsx scripts/seed-test-match.ts"
   },
   "dependencies": {
     "@skillswap/shared": "workspace:*",
