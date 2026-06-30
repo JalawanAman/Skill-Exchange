@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { serverApiFetch, ApiError } from '@/lib/api-server'
+import MatchList, { type Match } from '../matches/MatchList'
 
 type MeResponse = {
   user: {
@@ -28,6 +29,17 @@ export default async function DashboardPage() {
   // New users must finish onboarding before seeing the dashboard.
   if (user && !user.isOnboarded) redirect('/onboarding')
 
+  // Match feed — best-effort; an error here shouldn't break the dashboard.
+  let matches: Match[] = []
+  if (user) {
+    try {
+      const data = await serverApiFetch<{ matches: Match[] }>('/api/matches')
+      matches = data.matches
+    } catch {
+      matches = []
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
@@ -48,6 +60,9 @@ export default async function DashboardPage() {
                 <p className="text-3xl font-bold text-emerald-600">{user.creditBalance}</p>
               </div>
             </div>
+
+            {/* Match feed */}
+            <MatchList initial={matches} />
 
             {/* Profile details — straight from the API + database */}
             <div className="bg-white rounded-xl border divide-y">

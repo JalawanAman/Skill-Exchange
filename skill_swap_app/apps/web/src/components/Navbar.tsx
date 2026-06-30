@@ -16,6 +16,9 @@ export default function Navbar({ user }: { user: NavUser }) {
               <span className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
                 {user.credits} credits
               </span>
+              <Link href="/browse" className="text-sm text-gray-600 hover:text-gray-900">
+                Browse
+              </Link>
               <Link href={`/profile/${user.id}`} className="text-sm text-gray-600 hover:text-gray-900">
                 My profile
               </Link>
