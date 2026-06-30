@@ -81,8 +81,8 @@ async function loadProfiles(userIds: string[]): Promise<Map<string, MatchProfile
   return profiles
 }
 
-/** User ids the given user has blocked or been blocked by (excluded from matching). */
-async function blockedUserIds(userId: string): Promise<Set<string>> {
+/** User ids the given user has blocked or been blocked by (excluded from matching + browse). */
+export async function getBlockedUserIds(userId: string): Promise<Set<string>> {
   const rows = await db
     .select({ blockerId: blocks.blockerId, blockedId: blocks.blockedId })
     .from(blocks)
@@ -119,7 +119,7 @@ export async function refreshMatchesForUser(userId: string, requestId?: string):
       : Promise.resolve([] as { userId: string }[]),
   ])
 
-  const blocked = await blockedUserIds(userId)
+  const blocked = await getBlockedUserIds(userId)
   const candidateIds = new Set<string>()
   for (const r of [...wantSide, ...offerSide]) {
     if (r.userId !== userId && !blocked.has(r.userId)) candidateIds.add(r.userId)

@@ -8,6 +8,7 @@ import { userRoutes } from './routes/users'
 import { skillRoutes } from './routes/skills'
 import { availabilityRoutes } from './routes/availability'
 import { matchRoutes } from './routes/matches'
+import { blockRoutes } from './routes/blocks'
 import { requestLogger } from './middleware/logging'
 import { logger } from './lib/logger'
 
@@ -63,6 +64,7 @@ app.use('/api/users', userRoutes)
 app.use('/api/skills', skillRoutes)
 app.use('/api/availability', availabilityRoutes)
 app.use('/api/matches', matchRoutes)
+app.use('/api/blocks', blockRoutes)
 // app.use('/api/conversations', conversationRoutes)
 // app.use('/api/sessions', sessionRoutes)
 // app.use('/api/credits', creditRoutes)
