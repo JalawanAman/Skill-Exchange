@@ -173,3 +173,18 @@ export async function refreshMatchesForUser(userId: string, requestId?: string):
   })
   return rows.length
 }
+
+/**
+ * Fire-and-forget refresh — used by mutation routes (skills/availability/profile)
+ * so recomputing matches never blocks or fails the user's request. Errors are
+ * logged, not thrown.
+ */
+export function refreshMatchesInBackground(userId: string, requestId?: string): void {
+  void refreshMatchesForUser(userId, requestId).catch((err) => {
+    void logger.exception('background match refresh failed', err, {
+      source: 'matching',
+      requestId,
+      context: { userId },
+    })
+  })
+}

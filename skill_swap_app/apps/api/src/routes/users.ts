@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { users, skillOffers, skillWants, skills } from '../db/schema'
 import { logger } from '../lib/logger'
+import { refreshMatchesInBackground } from '../services/matching.service'
 
 const router: IRouter = Router()
 
@@ -103,6 +104,8 @@ router.patch('/me', async (req: Request, res: Response, next: NextFunction) => {
     if (!user) return res.status(404).json({ error: 'User not found', code: 'USER_NOT_FOUND' })
 
     void logger.info('profile updated', { source: 'api:users', requestId, context: { userId, fields: Object.keys(parsed.data) } })
+    // Languages feed the match score — recompute when they change.
+    if (parsed.data.languages !== undefined) refreshMatchesInBackground(userId, requestId)
     return res.json({ user })
   } catch (err) {
     return next(err)

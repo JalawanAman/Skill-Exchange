@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { db } from '../db'
 import { availability } from '../db/schema'
 import { generateId } from '../lib/ids'
+import { refreshMatchesInBackground } from '../services/matching.service'
 
 const router: IRouter = Router()
 
@@ -57,6 +58,7 @@ router.put('/', async (req: Request, res: Response, next: NextFunction) => {
       .from(availability)
       .where(eq(availability.userId, userId))
       .orderBy(asc(availability.dayOfWeek), asc(availability.startTime))
+    refreshMatchesInBackground(userId)
     return res.json({ availability: rows })
   } catch (err) {
     return next(err)
