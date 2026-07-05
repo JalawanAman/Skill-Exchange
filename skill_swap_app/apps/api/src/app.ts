@@ -13,6 +13,7 @@ import { connectionRoutes } from './routes/connections'
 import { conversationRoutes } from './routes/conversations'
 import { requestLogger } from './middleware/logging'
 import { logger } from './lib/logger'
+import { corsOrigin } from './lib/cors'
 
 const app: Express = express()
 
@@ -25,10 +26,10 @@ app.use(requestLogger)
 // Security headers
 app.use(helmet())
 
-// CORS — frontend only
+// CORS — localhost + explicit FRONTEND_URL + any *.vercel.app (see lib/cors)
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: corsOrigin,
     credentials: true,
   })
 )

@@ -35,6 +35,9 @@ export const matchStatusEnum = pgEnum('match_status', ['active', 'dismissed', 'c
 // M4: a connection request's lifecycle.
 export const connectionStatusEnum = pgEnum('connection_status', ['pending', 'accepted', 'declined'])
 
+// M5: chat message kind.
+export const messageTypeEnum = pgEnum('message_type', ['text', 'image', 'file', 'system'])
+
 // ─── M1: users ───────────────────────────────────────────────────────────────
 
 export const users = pgTable('users', {
@@ -251,6 +254,27 @@ export const conversations = pgTable(
   })
 )
 
+// ─── M5: messages (chat history; real-time delivery via socket.io) ─────────────
+
+export const messages = pgTable(
+  'messages',
+  {
+    id: text('id').primaryKey(),                          // msg_...
+    conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+    senderId: text('sender_id').notNull().references(() => users.id),
+    content: text('content').notNull(),
+    messageType: messageTypeEnum('message_type').default('text').notNull(),
+    fileUrl: text('file_url'),                            // Cloudinary URL for image/file messages
+    isRead: boolean('is_read').default(false).notNull(),
+    readAt: timestamp('read_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    convIdx: index('idx_messages_conv_id').on(t.conversationId, t.createdAt),
+    senderIdx: index('idx_messages_sender').on(t.senderId),
+  })
+)
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type User = typeof users.$inferSelect
@@ -275,3 +299,5 @@ export type ConnectionRequest = typeof connectionRequests.$inferSelect
 export type NewConnectionRequest = typeof connectionRequests.$inferInsert
 export type Conversation = typeof conversations.$inferSelect
 export type NewConversation = typeof conversations.$inferInsert
+export type Message = typeof messages.$inferSelect
+export type NewMessage = typeof messages.$inferInsert

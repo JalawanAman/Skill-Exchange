@@ -2,7 +2,7 @@
 
 **Founder:** Jalawan Aman Khan  
 **Last updated:** 2026-07-05  
-**Current phase:** M3 — Skills, Matching & Browse ✅ built & deployed (smoke-verified) · M4 next
+**Current phase:** M4 — Connections ✅ built & deployed (smoke-verified) · M5 (Real-Time Chat) next
 
 > **Testing note:** We're building **feature-first** — functionality now, deep
 > testing + UI polish later. "Done" below means **built, deployed, and
@@ -14,7 +14,7 @@
 ## Overall Status
 
 ```
-[■■■■■■■■■■] M1 done (gate green) · M2 built & deployed · M3 built & deployed · M4 next
+[■■■■■■■■■■] M1 · M2 · M3 · M4 built & deployed · M5 (Real-Time Chat) next
 ```
 
 | Milestone | Status | Notes |
@@ -23,7 +23,8 @@
 | M2 — Profiles & Onboarding | ✅ Built & deployed | Functional; deep QA/polish deferred |
 | Architecture hardening | ✅ Done | Text-ID convention documented; neon-serverless transactions |
 | M3 — Skills, Matching & Browse | ✅ Built & deployed | Matching engine live; AI skill-tags deferred |
-| M4–M9 | ⬜ | |
+| M4 — Connections | ✅ Built & deployed | Requests/accept/decline + conversations; chat UI is M5 |
+| M5–M9 | ⬜ | |
 
 ---
 
@@ -85,11 +86,38 @@ optimistic UI) + `/browse` page (debounced search, category filter, block) + Bro
 
 ---
 
+## M4 — Built & deployed (smoke-verified)
+
+**Backend** — new `connection_requests` + `conversations` tables (text-ID; conversation pair
+canonicalized in the service so it's unique regardless of who accepts). Added `'connected'` to
+`match_status`. API: `POST /connections/request` (5-per-7-day free limit, block/duplicate/already-connected
+guards, re-send after decline), `GET /connections/requests` (incoming|outgoing + count),
+accept (opens/reuses a conversation + flips both match rows to `connected`), decline,
+`GET /conversations`.
+
+**Frontend** — reusable `ConnectButton` (idle/pending/connected/limit/incoming states) on match cards,
+profiles, and browse · `/connections` inbox (accept/decline, optimistic) · navbar **Requests** badge with
+live pending count. `ApiError` now carries the API error `code` so the button reflects the real state.
+
+### GATE M4 — implemented (basic-run verified, not deep-tested)
+- **Live UI:** navbar shows the pending-request badge; Connect on an already-incoming user shows
+  "Respond to request" (INCOMING_EXISTS); Requests inbox renders the seeded request with Accept/Decline. ✅
+- **Accept flow:** accepting creates a conversation + flips the match to `connected` (card leaves the
+  `active` feed by design). Verified via the `seed:test-connection` script (partner → you).
+- **Quality:** tsc + ESLint green (api & web); 19 scorer unit tests still pass.
+- **Deferred:** chat UI + real-time delivery (M5); a user-facing conversations/connections list lands with M5.
+
+> Verified once end-to-end on the deployed site (`dev`): request → inbox → accept path works from live API/DB.
+> Not stress/edge tested; the free-tier limit + block guards are code-verified, not manually exercised.
+
+---
+
 ## Next
-1. **M4 — next milestone** (see `idea/docs/` roadmap) — begin after M3 sign-off.
+1. **M5 — Real-Time Chat** — messages table + send/list API + Socket.IO delivery + conversation/chat UI
+   (makes M4's connections usable). See `idea/docs/07_MILESTONES.md`.
 
 ## Blockers
 - None.
 
 ## Decisions
-→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk`; 20-credit bonus; text-ID convention; neon-serverless driver; **M3 directional matches** (one row per viewer, diverges from doc 04's symmetric model — enables simple feed + independent dismiss).
+→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk`; 20-credit bonus; text-ID convention; neon-serverless driver; **M3 directional matches** (one row per viewer, diverges from doc 04's symmetric model — enables simple feed + independent dismiss); **M4 canonicalized conversation pair** (participantA < participantB so a pair maps to one conversation regardless of who accepts).
