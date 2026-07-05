@@ -13,9 +13,20 @@ export default async function ProtectedLayout({ children }: { children: ReactNod
     // No DB row yet (brand-new signup mid-webhook) — render the bar without user info.
   }
 
+  // Pending connection-request count for the navbar badge — best-effort.
+  let pendingRequests = 0
+  if (navUser) {
+    try {
+      const { count } = await serverApiFetch<{ count: number }>('/api/connections/requests')
+      pendingRequests = count
+    } catch {
+      pendingRequests = 0
+    }
+  }
+
   return (
     <>
-      <Navbar user={navUser} />
+      <Navbar user={navUser} pendingRequests={pendingRequests} />
       {children}
     </>
   )

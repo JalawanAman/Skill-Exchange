@@ -2,11 +2,12 @@ import { auth } from '@clerk/nextjs/server'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'
 
-/** Thrown when the API responds with a non-2xx status; carries the status code. */
+/** Thrown when the API responds with a non-2xx status; carries the status + error code. */
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    public readonly code?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -34,7 +35,17 @@ export async function serverApiFetch<T>(path: string, init?: RequestInit): Promi
   })
 
   if (!res.ok) {
-    throw new ApiError(res.status, `API responded ${res.status} for ${path}`)
+    // Best-effort: pull the API's { error, code } out of the body so callers can branch.
+    let code: string | undefined
+    let detail = `API responded ${res.status} for ${path}`
+    try {
+      const body = (await res.json()) as { error?: string; code?: string }
+      code = body.code
+      if (body.error) detail = body.error
+    } catch {
+      // Non-JSON body — keep the generic message.
+    }
+    throw new ApiError(res.status, detail, code)
   }
 
   return res.json() as Promise<T>

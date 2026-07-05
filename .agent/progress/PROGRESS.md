@@ -1,8 +1,8 @@
 # Build Progress
 
 **Founder:** Jalawan Aman Khan  
-**Last updated:** 2026-06-28  
-**Current phase:** M2 — Profiles & Onboarding ✅ built & deployed (light verification only) · M3 next
+**Last updated:** 2026-07-05  
+**Current phase:** M3 — Skills, Matching & Browse ✅ built & deployed (smoke-verified) · M4 next
 
 > **Testing note:** We're building **feature-first** — functionality now, deep
 > testing + UI polish later. "Done" below means **built, deployed, and
@@ -14,7 +14,7 @@
 ## Overall Status
 
 ```
-[■■■■■■■■■■] M1 done (gate green) · M2 built & deployed · architecture hardened · M3 next
+[■■■■■■■■■■] M1 done (gate green) · M2 built & deployed · M3 built & deployed · M4 next
 ```
 
 | Milestone | Status | Notes |
@@ -22,7 +22,7 @@
 | M1 — Auth & Setup | ✅ Done (gate green) | Full auth + backend live |
 | M2 — Profiles & Onboarding | ✅ Built & deployed | Functional; deep QA/polish deferred |
 | Architecture hardening | ✅ Done | Text-ID convention documented; neon-serverless transactions |
-| M3 — Skills, Matching & Browse | ⬜ Next | |
+| M3 — Skills, Matching & Browse | ✅ Built & deployed | Matching engine live; AI skill-tags deferred |
 | M4–M9 | ⬜ | |
 
 ---
@@ -59,11 +59,37 @@ shared navbar w/ credit balance, Cloudinary unsigned photo upload, new-user → 
 
 ---
 
+## M3 — Built & deployed (smoke-verified)
+
+**Matching engine** — 5-factor compatibility score (0–100): mutual swap 40 · availability overlap 20 ·
+shared language 20 · experience 10 · reputation 10 (0 until M6/M8). Pure scorer isolated in
+`matching.score.ts` (19 Vitest cases green); DB orchestration in `matching.service.ts`.
+
+**Backend** — new `matches` (directional: "userId should see matchedUserId") + `blocks` tables (text-ID,
+migration applied to Neon). API: `GET /matches`, `POST /matches/refresh`, `POST /matches/:id/dismiss`,
+`POST/DELETE /blocks`, `GET /users/search` (skill/category/free-text, excludes self + blocked).
+Auto-refresh triggers wired into skills/wants/availability/profile mutations (fire-and-forget).
+
+**Frontend** — dashboard match feed (score badge, teach/learn chips, shared language, Dismiss/Block/Refresh,
+optimistic UI) + `/browse` page (debounced search, category filter, block) + Browse nav link.
+
+### GATE M3 — implemented (basic-run verified, not deep-tested)
+- **Engine:** seeded a complementary partner against a real onboarded user → score **86/100**,
+  breakdown `{mutual:40, availability:16, language:20, experience:10, reputation:0}` — matches by hand.
+- **Live UI:** dashboard renders the 86 match card (Piano ↔ Python, shared `en`), Browse loads. ✅
+- **Quality:** tsc + ESLint green (api & web); 19 scorer unit tests pass.
+- **Deferred:** Gemini AI skill-tag suggestions; reputation factor (needs M6/M8 reviews/sessions).
+
+> Verified once end-to-end on the deployed site (`dev`): match feed + browse render from live API/DB.
+> Not stress/edge tested; multi-real-user matching not yet exercised beyond the seeded partner.
+
+---
+
 ## Next
-1. **M3 — Skills, Matching & Browse** — matching engine (complementary skills) + browse/search.
+1. **M4 — next milestone** (see `idea/docs/` roadmap) — begin after M3 sign-off.
 
 ## Blockers
 - None.
 
 ## Decisions
-→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk`; 20-credit bonus; text-ID convention; neon-serverless driver.
+→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk`; 20-credit bonus; text-ID convention; neon-serverless driver; **M3 directional matches** (one row per viewer, diverges from doc 04's symmetric model — enables simple feed + independent dismiss).

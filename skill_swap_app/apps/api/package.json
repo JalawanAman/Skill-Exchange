@@ -15,7 +15,8 @@
     "db:studio": "drizzle-kit studio",
     "logs": "tsx scripts/read-logs.ts",
     "seed:skills": "tsx scripts/seed-skills.ts",
-    "seed:test-match": "tsx scripts/seed-test-match.ts"
+    "seed:test-match": "tsx scripts/seed-test-match.ts",
+    "seed:test-connection": "tsx scripts/seed-test-connection.ts"
   },
   "dependencies": {
     "@skillswap/shared": "workspace:*",
