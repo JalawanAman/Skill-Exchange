@@ -29,8 +29,11 @@ export const creditTxTypeEnum = pgEnum('credit_tx_type', [
 export const proficiencyEnum = pgEnum('proficiency', ['beginner', 'intermediate', 'expert'])
 export const wantLevelEnum = pgEnum('want_level', ['beginner', 'intermediate', 'advanced'])
 
-// M3: a surfaced match's lifecycle. ('connected' lives in M4's connections flow.)
-export const matchStatusEnum = pgEnum('match_status', ['active', 'dismissed'])
+// M3: a surfaced match's lifecycle. 'connected' is set in M4 once the pair connects.
+export const matchStatusEnum = pgEnum('match_status', ['active', 'dismissed', 'connected'])
+
+// M4: a connection request's lifecycle.
+export const connectionStatusEnum = pgEnum('connection_status', ['pending', 'accepted', 'declined'])
 
 // ─── M1: users ───────────────────────────────────────────────────────────────
 
@@ -206,6 +209,48 @@ export const blocks = pgTable(
   })
 )
 
+// ─── M4: connection_requests (send / accept / decline) ─────────────────────────
+
+// Directional intent: from_user asks to connect with to_user. One live request per
+// ordered pair (unique). Accepting flips status → 'accepted' and opens a conversation.
+export const connectionRequests = pgTable(
+  'connection_requests',
+  {
+    id: text('id').primaryKey(),                          // conn_...
+    fromUserId: text('from_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    toUserId: text('to_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    message: text('message'),                             // optional intro note
+    status: connectionStatusEnum('status').default('pending').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    toUserIdx: index('idx_conn_req_to_user').on(t.toUserId, t.status),
+    fromUserIdx: index('idx_conn_req_from_user').on(t.fromUserId, t.createdAt),
+    pairUnique: unique('uq_conn_req_pair').on(t.fromUserId, t.toUserId),
+  })
+)
+
+// ─── M4: conversations (one per connected pair) ────────────────────────────────
+
+// Pair is canonicalized in the service layer (participantA < participantB) so a
+// conversation is unique regardless of who accepted. Messages arrive in M5.
+export const conversations = pgTable(
+  'conversations',
+  {
+    id: text('id').primaryKey(),                          // cnv_...
+    participantA: text('participant_a').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    participantB: text('participant_b').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    lastMessageAt: timestamp('last_message_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    participantAIdx: index('idx_conv_participant_a').on(t.participantA, t.lastMessageAt),
+    participantBIdx: index('idx_conv_participant_b').on(t.participantB, t.lastMessageAt),
+    pairUnique: unique('uq_conversations_pair').on(t.participantA, t.participantB),
+  })
+)
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type User = typeof users.$inferSelect
@@ -226,3 +271,7 @@ export type Match = typeof matches.$inferSelect
 export type NewMatch = typeof matches.$inferInsert
 export type Block = typeof blocks.$inferSelect
 export type NewBlock = typeof blocks.$inferInsert
+export type ConnectionRequest = typeof connectionRequests.$inferSelect
+export type NewConnectionRequest = typeof connectionRequests.$inferInsert
+export type Conversation = typeof conversations.$inferSelect
+export type NewConversation = typeof conversations.$inferInsert
