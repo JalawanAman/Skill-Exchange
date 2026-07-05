@@ -19,6 +19,9 @@ export default function Navbar({ user, pendingRequests = 0 }: { user: NavUser; p
               <Link href="/browse" className="text-sm text-gray-600 hover:text-gray-900">
                 Browse
               </Link>
+              <Link href="/messages" className="text-sm text-gray-600 hover:text-gray-900">
+                Messages
+              </Link>
               <Link href="/connections" className="relative text-sm text-gray-600 hover:text-gray-900">
                 Requests
                 {pendingRequests > 0 && (
