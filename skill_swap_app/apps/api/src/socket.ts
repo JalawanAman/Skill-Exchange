@@ -6,6 +6,7 @@ import { db } from './db'
 import { conversations, messages } from './db/schema'
 import { generateId } from './lib/ids'
 import { logger } from './lib/logger'
+import { corsOrigin } from './lib/cors'
 
 // Module-level handle so REST routes can emit (e.g. a message sent via HTTP).
 let io: Server | null = null
@@ -36,7 +37,7 @@ async function isParticipant(conversationId: string, userId: string): Promise<bo
 export function initSocket(server: HttpServer): Server {
   io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: corsOrigin,
       credentials: true,
     },
   })
