@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import ConnectButton from '@/components/ConnectButton'
 import { searchUsers, type BrowseUser } from './actions'
 import { blockUser } from '../matches/actions'
 
@@ -108,6 +109,9 @@ export default function BrowseClient({ categories }: { categories: string[] }) {
                       ))}
                     </div>
                   )}
+                  <div className="mt-3">
+                    <ConnectButton userId={u.id} />
+                  </div>
                 </div>
               </div>
             ))}

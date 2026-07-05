@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ConnectButton from '@/components/ConnectButton'
 import { dismissMatch, refreshMatches, blockUser } from './actions'
 
 export type MatchedSkill = {
@@ -154,6 +155,7 @@ function MatchCard({
       </div>
 
       <div className="mt-4 flex items-center gap-3 border-t pt-3 text-sm">
+        <ConnectButton userId={match.user.id} />
         <Link href={`/profile/${match.user.id}`} className="font-medium text-blue-600 hover:underline">
           View profile
         </Link>

@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import { auth } from '@clerk/nextjs/server'
 import { serverApiFetch, ApiError } from '@/lib/api-server'
+import ConnectButton from '@/components/ConnectButton'
 
 type SkillOffer = {
   id: string
@@ -30,6 +32,8 @@ type ProfileResponse = {
 export default async function ProfilePage({ params }: { params: { id: string } }) {
   let user: ProfileResponse['user'] | null = null
   let status = 0
+
+  const { userId: viewerId } = await auth()
 
   try {
     const data = await serverApiFetch<ProfileResponse>(`/api/users/${params.id}`)
@@ -73,6 +77,11 @@ export default async function ProfilePage({ params }: { params: { id: string } }
               <p className="mt-1 text-sm text-gray-500">Speaks: {user.languages.join(', ')}</p>
             )}
           </div>
+          {viewerId && viewerId !== user.id && (
+            <div className="ml-auto self-start">
+              <ConnectButton userId={user.id} />
+            </div>
+          )}
         </div>
 
         {user.bio && <p className="rounded-xl border bg-white p-6 text-gray-700">{user.bio}</p>}
