@@ -2,7 +2,7 @@
 
 **Founder:** Jalawan Aman Khan  
 **Last updated:** 2026-07-06  
-**Current phase:** M5 — Real-Time Chat ✅ core built & deployed (real-time verified live) · M5 polish (image upload + block-from-chat) in progress
+**Current phase:** M5 — Real-Time Chat ✅ built & deployed (real-time verified live; image upload + block/report done) · M6 (Session Booking) next
 
 > **Testing note:** We're building **feature-first** — functionality now, deep
 > testing + UI polish later. "Done" below means **built, deployed, and
@@ -14,7 +14,7 @@
 ## Overall Status
 
 ```
-[■■■■■■■■■■] M1 · M2 · M3 · M4 · M5 core built & deployed (real-time live) · M5 polish in progress
+[■■■■■■■■■■] M1 · M2 · M3 · M4 · M5 built & deployed (real-time live) · M6 (Session Booking) next
 ```
 
 | Milestone | Status | Notes |
@@ -24,7 +24,7 @@
 | Architecture hardening | ✅ Done | Text-ID convention documented; neon-serverless transactions |
 | M3 — Skills, Matching & Browse | ✅ Built & deployed | Matching engine live; AI skill-tags deferred |
 | M4 — Connections | ✅ Built & deployed | Requests/accept/decline + conversations; chat UI is M5 |
-| M5 — Real-Time Chat | 🟡 Core done, polishing | Live 2-way chat verified; image upload + block-from-chat next |
+| M5 — Real-Time Chat | ✅ Built & deployed | Live 2-way chat verified; image upload + block/report done |
 | M6–M9 | ⬜ | |
 
 ---
@@ -113,7 +113,7 @@ live pending count. `ApiError` now carries the API error `code` so the button re
 
 ---
 
-## M5 — Real-Time Chat (core built & deployed, real-time verified live)
+## M5 — Real-Time Chat (built & deployed, real-time verified live)
 
 **Backend** — new `messages` table (text-ID, per-message read flag). `socket.ts` rewritten: real
 Clerk-JWT handshake auth, room join/leave (membership-checked), `message:send`→persist→broadcast
@@ -134,8 +134,10 @@ auto-reconnect. **Messages** nav link.
   read-back, and read-receipt marking against the real DB; skipped in CI (DB-free). Seeded 5-message
   thread renders + unread count correct.
 - **Auth:** socket rejects connections without a valid Clerk token (handshake middleware).
+- **Polish (done):** in-chat image upload (Cloudinary, `messageType='image'` + `fileUrl`), and block/report
+  from the chat header — block reuses the existing action; report posts to `POST /api/reports` (recorded to
+  the `logs` table for review, no dedicated moderation table yet).
 - **Quality:** tsc + ESLint green (api & web); 21 tests pass (19 scorer + 2 integration).
-- **Deferred (M5 polish, in progress):** in-chat image upload (Cloudinary) + block/report from the chat UI.
 
 > Live 2-way real-time verified end-to-end. Not yet stress-tested (rapid-send dedupe, reconnect storms,
 > mobile keyboard layout are code-handled but not exhaustively exercised).
@@ -143,8 +145,7 @@ auto-reconnect. **Messages** nav link.
 ---
 
 ## Next
-1. **M5 polish** — in-chat image upload (Cloudinary) + block/report from the chat UI. *(in progress)*
-2. **M6 — Session Booking** — book skill-swap sessions (slots + credit escrow). See `idea/docs/07_MILESTONES.md`.
+1. **M6 — Session Booking** — book skill-swap sessions (slots + credit escrow). See `idea/docs/07_MILESTONES.md`.
 
 ## Blockers
 - None.
