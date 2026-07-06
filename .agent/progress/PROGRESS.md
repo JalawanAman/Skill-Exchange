@@ -1,8 +1,8 @@
 # Build Progress
 
 **Founder:** Jalawan Aman Khan  
-**Last updated:** 2026-07-05  
-**Current phase:** M4 — Connections ✅ built & deployed (smoke-verified) · M5 (Real-Time Chat) next
+**Last updated:** 2026-07-06  
+**Current phase:** M5 — Real-Time Chat ✅ core built & deployed (real-time verified live) · M5 polish (image upload + block-from-chat) in progress
 
 > **Testing note:** We're building **feature-first** — functionality now, deep
 > testing + UI polish later. "Done" below means **built, deployed, and
@@ -14,7 +14,7 @@
 ## Overall Status
 
 ```
-[■■■■■■■■■■] M1 · M2 · M3 · M4 built & deployed · M5 (Real-Time Chat) next
+[■■■■■■■■■■] M1 · M2 · M3 · M4 · M5 core built & deployed (real-time live) · M5 polish in progress
 ```
 
 | Milestone | Status | Notes |
@@ -24,7 +24,8 @@
 | Architecture hardening | ✅ Done | Text-ID convention documented; neon-serverless transactions |
 | M3 — Skills, Matching & Browse | ✅ Built & deployed | Matching engine live; AI skill-tags deferred |
 | M4 — Connections | ✅ Built & deployed | Requests/accept/decline + conversations; chat UI is M5 |
-| M5–M9 | ⬜ | |
+| M5 — Real-Time Chat | 🟡 Core done, polishing | Live 2-way chat verified; image upload + block-from-chat next |
+| M6–M9 | ⬜ | |
 
 ---
 
@@ -112,12 +113,41 @@ live pending count. `ApiError` now carries the API error `code` so the button re
 
 ---
 
+## M5 — Real-Time Chat (core built & deployed, real-time verified live)
+
+**Backend** — new `messages` table (text-ID, per-message read flag). `socket.ts` rewritten: real
+Clerk-JWT handshake auth, room join/leave (membership-checked), `message:send`→persist→broadcast
+`message:new`, typing indicators, `message:read`, and in-memory presence (single-instance; Upstash is
+the scale path). REST: `GET /conversations` (unread + last-message preview + online), `GET
+/conversations/:id/messages` (cursor pagination), `PATCH /:id/read` (emits a receipt). Shared CORS policy
+now allows localhost + `FRONTEND_URL` + any `*.vercel.app`.
+
+**Frontend** — `/messages` list (preview, unread badge, online dot) + `/messages/:id` `ChatWindow`:
+socket client with fresh-token auth on every (re)connect, optimistic send + ack reconcile, real-time
+receive, typing dots, read ticks (✓/✓✓), presence dot, scroll-up history pagination, auto-scroll,
+auto-reconnect. **Messages** nav link.
+
+### GATE M5 — implemented (verified live with two real accounts)
+- **Real-time:** a message sent in one browser appeared in a second account's window within ~1s, no
+  refresh — confirmed live on the deployed site. ✅
+- **History/read:** DB-backed integration test (`chat.integration.test.ts`) proves send→store, history
+  read-back, and read-receipt marking against the real DB; skipped in CI (DB-free). Seeded 5-message
+  thread renders + unread count correct.
+- **Auth:** socket rejects connections without a valid Clerk token (handshake middleware).
+- **Quality:** tsc + ESLint green (api & web); 21 tests pass (19 scorer + 2 integration).
+- **Deferred (M5 polish, in progress):** in-chat image upload (Cloudinary) + block/report from the chat UI.
+
+> Live 2-way real-time verified end-to-end. Not yet stress-tested (rapid-send dedupe, reconnect storms,
+> mobile keyboard layout are code-handled but not exhaustively exercised).
+
+---
+
 ## Next
-1. **M5 — Real-Time Chat** — messages table + send/list API + Socket.IO delivery + conversation/chat UI
-   (makes M4's connections usable). See `idea/docs/07_MILESTONES.md`.
+1. **M5 polish** — in-chat image upload (Cloudinary) + block/report from the chat UI. *(in progress)*
+2. **M6 — Session Booking** — book skill-swap sessions (slots + credit escrow). See `idea/docs/07_MILESTONES.md`.
 
 ## Blockers
 - None.
 
 ## Decisions
-→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk`; 20-credit bonus; text-ID convention; neon-serverless driver; **M3 directional matches** (one row per viewer, diverges from doc 04's symmetric model — enables simple feed + independent dismiss); **M4 canonicalized conversation pair** (participantA < participantB so a pair maps to one conversation regardless of who accepts).
+→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk`; 20-credit bonus; text-ID convention; neon-serverless driver; **M3 directional matches** (one row per viewer, diverges from doc 04's symmetric model — enables simple feed + independent dismiss); **M4 canonicalized conversation pair** (participantA < participantB so a pair maps to one conversation regardless of who accepts); **M5 in-memory presence** (single Railway instance; Upstash Redis is the horizontal-scale path) + **CORS `*.vercel.app` pattern** (auth is bearer-token, not cookie, so it's safe).
