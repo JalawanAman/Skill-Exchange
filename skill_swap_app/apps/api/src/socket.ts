@@ -22,7 +22,13 @@ export function isOnline(userId: string): boolean {
 }
 
 const convRoom = (conversationId: string) => `conv:${conversationId}`
+const userRoom = (userId: string) => `user:${userId}`
 const MAX_CONTENT = 5000
+
+/** Emit an event to every socket a user has open (e.g. session:update notifications). */
+export function emitToUser(userId: string, event: string, payload: unknown): void {
+  io?.to(userRoom(userId)).emit(event, payload)
+}
 
 /** Is the user one of the two participants of the conversation? */
 async function isParticipant(conversationId: string, userId: string): Promise<boolean> {
@@ -62,6 +68,10 @@ export function initSocket(server: HttpServer): Server {
 
 function onConnection(socket: Socket): void {
   const userId = socket.data.userId as string
+
+  // Personal room — lets the server push notifications (e.g. session updates) to
+  // all of this user's tabs without knowing their socket ids.
+  socket.join(userRoom(userId))
 
   // Presence: mark online, and let others know if this is the first live socket.
   const prev = online.get(userId) ?? 0
