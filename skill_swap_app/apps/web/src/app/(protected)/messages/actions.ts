@@ -15,3 +15,12 @@ export async function loadOlderMessages(conversationId: string, before: string):
 export async function markConversationRead(conversationId: string): Promise<void> {
   await serverApiFetch(`/api/conversations/${conversationId}/read`, { method: 'PATCH' })
 }
+
+/** Report a user (recorded server-side for review). */
+export async function reportUser(userId: string, reason?: string): Promise<void> {
+  await serverApiFetch('/api/reports', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, reason }),
+  })
+}

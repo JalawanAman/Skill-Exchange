@@ -11,6 +11,7 @@ import { matchRoutes } from './routes/matches'
 import { blockRoutes } from './routes/blocks'
 import { connectionRoutes } from './routes/connections'
 import { conversationRoutes } from './routes/conversations'
+import { reportRoutes } from './routes/reports'
 import { requestLogger } from './middleware/logging'
 import { logger } from './lib/logger'
 import { corsOrigin } from './lib/cors'
@@ -70,6 +71,7 @@ app.use('/api/matches', matchRoutes)
 app.use('/api/blocks', blockRoutes)
 app.use('/api/connections', connectionRoutes)
 app.use('/api/conversations', conversationRoutes)
+app.use('/api/reports', reportRoutes)
 // app.use('/api/sessions', sessionRoutes)
 // app.use('/api/credits', creditRoutes)
 // app.use('/api/reviews', reviewRoutes)

@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@clerk/nextjs'
 import type { Socket } from 'socket.io-client'
 import { createChatSocket } from '@/lib/chat-socket'
-import { loadOlderMessages, markConversationRead } from '../actions'
+import { uploadImage, cloudinaryReady } from '@/lib/cloudinary'
+import { blockUser } from '../../matches/actions'
+import { loadOlderMessages, markConversationRead, reportUser } from '../actions'
 
 export type ChatMessage = {
   id: string
@@ -23,6 +26,7 @@ export type ChatMessage = {
 }
 
 type OtherUser = { id: string; displayName: string | null; avatarUrl: string | null }
+type SendAck = { ok: boolean; message?: ChatMessage }
 
 export default function ChatWindow({
   conversationId,
@@ -42,6 +46,7 @@ export default function ChatWindow({
   initialNextBefore: string | null
 }) {
   const { getToken } = useAuth()
+  const router = useRouter()
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [online, setOnline] = useState(initialOnline)
   const [otherTyping, setOtherTyping] = useState(false)
@@ -49,6 +54,9 @@ export default function ChatWindow({
   const [draft, setDraft] = useState('')
   const [hasMore, setHasMore] = useState(initialHasMore)
   const [loadingOlder, setLoadingOlder] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement | null>(null)
 
   const nextBeforeRef = useRef<string | null>(initialNextBefore)
   const socketRef = useRef<Socket | null>(null)
@@ -182,20 +190,75 @@ export default function ChatWindow({
     setDraft('')
     emitTyping(false)
 
-    socketRef.current.emit(
-      'message:send',
-      { conversationId, content: text, tempId },
-      (res: { ok: boolean; message?: ChatMessage }) => {
-        setMessages((prev) => {
-          if (res?.ok && res.message) {
-            const real = res.message
-            const withoutDup = prev.filter((x) => x.id !== real.id)
-            return withoutDup.map((x) => (x.id === tempId ? real : x))
-          }
-          return prev.map((x) => (x.id === tempId ? { ...x, pending: false, failed: true } : x))
-        })
-      },
+    socketRef.current.emit('message:send', { conversationId, content: text, tempId }, (res: SendAck) =>
+      reconcile(tempId, res),
     )
+  }
+
+  // Reconcile an optimistic message with the server's canonical row (or mark failed).
+  function reconcile(tempId: string, res: SendAck) {
+    setMessages((prev) => {
+      if (res?.ok && res.message) {
+        const real = res.message
+        const withoutDup = prev.filter((x) => x.id !== real.id)
+        return withoutDup.map((x) => (x.id === tempId ? real : x))
+      }
+      return prev.map((x) => (x.id === tempId ? { ...x, pending: false, failed: true } : x))
+    })
+  }
+
+  async function onPickImage(file: File) {
+    if (!socketRef.current) return
+    setUploading(true)
+    try {
+      const url = await uploadImage(file)
+      const tempId = `temp_${Date.now()}_${Math.round(Math.random() * 1e6)}`
+      const optimistic: ChatMessage = {
+        id: tempId,
+        conversationId,
+        senderId: meId,
+        content: '',
+        messageType: 'image',
+        fileUrl: url,
+        isRead: false,
+        readAt: null,
+        createdAt: new Date().toISOString(),
+        pending: true,
+      }
+      setMessages((prev) => [...prev, optimistic])
+      socketRef.current.emit(
+        'message:send',
+        { conversationId, messageType: 'image', fileUrl: url, tempId },
+        (res: SendAck) => reconcile(tempId, res),
+      )
+    } catch {
+      alert('Image upload failed. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function onBlock() {
+    setMenuOpen(false)
+    if (!confirm(`Block ${other.displayName ?? 'this user'}? They'll be removed from your matches and can't message you.`)) return
+    try {
+      await blockUser(other.id)
+      router.push('/messages')
+    } catch {
+      alert('Could not block. Please try again.')
+    }
+  }
+
+  async function onReport() {
+    setMenuOpen(false)
+    const reason = prompt(`Report ${other.displayName ?? 'this user'}? Optionally add a reason:`)
+    if (reason === null) return // cancelled
+    try {
+      await reportUser(other.id, reason || undefined)
+      alert('Thanks — this user has been reported for review.')
+    } catch {
+      alert('Could not submit the report. Please try again.')
+    }
   }
 
   return (
@@ -221,6 +284,30 @@ export default function ChatWindow({
             {!connected && ' · reconnecting…'}
           </p>
         </div>
+
+        {/* Overflow menu — block / report */}
+        <div className="relative ml-auto">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="rounded-full px-2 py-1 text-xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Conversation options"
+          >
+            ⋯
+          </button>
+          {menuOpen && (
+            <>
+              <button className="fixed inset-0 z-10 cursor-default" aria-hidden onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 z-20 mt-1 w-40 overflow-hidden rounded-lg border bg-white py-1 shadow-lg">
+                <button onClick={onReport} className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50">
+                  Report
+                </button>
+                <button onClick={onBlock} className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50">
+                  Block
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -244,6 +331,29 @@ export default function ChatWindow({
       {/* Composer */}
       <div className="border-t bg-white px-4 py-3">
         <div className="flex items-end gap-2">
+          {cloudinaryReady() && (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) void onPickImage(f)
+                  e.target.value = ''
+                }}
+              />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                title="Send an image"
+                className="rounded-full px-2 py-2 text-xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+              >
+                {uploading ? '…' : '📷'}
+              </button>
+            </>
+          )}
           <textarea
             value={draft}
             onChange={(e) => onDraftChange(e.target.value)}
@@ -279,7 +389,13 @@ function MessageBubble({ m, mine }: { m: ChatMessage; mine: boolean }) {
           mine ? 'bg-blue-600 text-white' : 'bg-white text-gray-900 shadow-sm'
         } ${m.failed ? 'opacity-60 ring-1 ring-red-300' : ''}`}
       >
-        <p className="whitespace-pre-wrap break-words">{m.content}</p>
+        {m.messageType === 'image' && m.fileUrl ? (
+          <a href={m.fileUrl} target="_blank" rel="noopener noreferrer">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={m.fileUrl} alt="" className="max-h-64 rounded-lg" />
+          </a>
+        ) : null}
+        {m.content && <p className="whitespace-pre-wrap break-words">{m.content}</p>}
         <div className={`mt-0.5 flex items-center justify-end gap-1 text-[10px] ${mine ? 'text-blue-100' : 'text-gray-400'}`}>
           <span>{time}</span>
           {mine && !m.pending && !m.failed && <span>{m.isRead ? '✓✓' : '✓'}</span>}
