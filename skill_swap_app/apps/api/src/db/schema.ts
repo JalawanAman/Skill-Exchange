@@ -23,6 +23,8 @@ export const creditTxTypeEnum = pgEnum('credit_tx_type', [
   'session_spend',
   'refund',
   'admin_adjustment',
+  'escrow_lock', // M6: credits held when a session is booked (negative)
+  'escrow_release', // M6: credits returned when a session is cancelled (positive)
 ])
 
 // M2: skill proficiency (offers) and target level (wants)
@@ -37,6 +39,17 @@ export const connectionStatusEnum = pgEnum('connection_status', ['pending', 'acc
 
 // M5: chat message kind.
 export const messageTypeEnum = pgEnum('message_type', ['text', 'image', 'file', 'system'])
+
+// M6: session lifecycle + format.
+export const sessionStatusEnum = pgEnum('session_status', [
+  'pending', // learner booked, awaiting teacher accept
+  'confirmed', // teacher accepted, credits in escrow
+  'in_progress', // scheduled time is now
+  'completed', // both confirmed done (M7)
+  'cancelled', // cancelled before it happened; credits refunded
+  'disputed', // a party raised a dispute (M7/M8)
+])
+export const sessionFormatEnum = pgEnum('session_format', ['video', 'in-person', 'async'])
 
 // ─── M1: users ───────────────────────────────────────────────────────────────
 
@@ -275,6 +288,40 @@ export const messages = pgTable(
   })
 )
 
+// ─── M6: sessions (booked skill swaps; credits held in escrow) ─────────────────
+
+// Learner books → credits move to escrow (balance drops) → teacher accepts →
+// confirmed. Cancel refunds. Completion/payout is M7. The unique booking key makes
+// POST /sessions idempotent on retry (same learner+teacher+skill+time = one row).
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(),                          // ses_...
+    teacherId: text('teacher_id').notNull().references(() => users.id),
+    learnerId: text('learner_id').notNull().references(() => users.id),
+    skillId: text('skill_id').notNull().references(() => skills.id),
+    conversationId: text('conversation_id').references(() => conversations.id),
+    scheduledAt: timestamp('scheduled_at').notNull(),
+    durationMinutes: integer('duration_minutes').notNull(),   // 30 | 60 | 90 | 120
+    format: sessionFormatEnum('format').notNull(),
+    meetingLink: text('meeting_link'),
+    creditsAmount: integer('credits_amount').notNull(),       // duration / 6 (10 per hour)
+    status: sessionStatusEnum('status').default('pending').notNull(),
+    teacherConfirmed: boolean('teacher_confirmed').default(false).notNull(),
+    learnerConfirmed: boolean('learner_confirmed').default(false).notNull(),
+    cancelledBy: text('cancelled_by').references(() => users.id),
+    cancelReason: text('cancel_reason'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (t) => ({
+    teacherIdx: index('idx_sessions_teacher').on(t.teacherId, t.status),
+    learnerIdx: index('idx_sessions_learner').on(t.learnerId, t.status),
+    scheduledIdx: index('idx_sessions_scheduled').on(t.scheduledAt),
+    bookingUnique: unique('uq_sessions_booking').on(t.learnerId, t.teacherId, t.skillId, t.scheduledAt),
+  })
+)
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type User = typeof users.$inferSelect
@@ -301,3 +348,5 @@ export type Conversation = typeof conversations.$inferSelect
 export type NewConversation = typeof conversations.$inferInsert
 export type Message = typeof messages.$inferSelect
 export type NewMessage = typeof messages.$inferInsert
+export type Session = typeof sessions.$inferSelect
+export type NewSession = typeof sessions.$inferInsert
