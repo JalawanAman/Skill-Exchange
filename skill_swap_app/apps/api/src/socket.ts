@@ -87,10 +87,21 @@ function onConnection(socket: Socket): void {
   socket.on(
     'message:send',
     async (payload: unknown, ack?: (r: unknown) => void) => {
-      const p = (payload ?? {}) as { conversationId?: unknown; content?: unknown; tempId?: unknown }
+      const p = (payload ?? {}) as {
+        conversationId?: unknown
+        content?: unknown
+        messageType?: unknown
+        fileUrl?: unknown
+        tempId?: unknown
+      }
       const conversationId = p.conversationId
+      const isImage = p.messageType === 'image'
       const content = typeof p.content === 'string' ? p.content.trim() : ''
-      if (typeof conversationId !== 'string' || !content) {
+      const fileUrl = typeof p.fileUrl === 'string' && p.fileUrl.startsWith('https://') ? p.fileUrl : null
+
+      if (typeof conversationId !== 'string') return ack?.({ ok: false, error: 'INVALID' })
+      // Text needs content; an image needs a (https) fileUrl. Caption is optional.
+      if (isImage ? !fileUrl : !content) {
         return ack?.({ ok: false, error: 'INVALID' })
       }
       if (!(await isParticipant(conversationId, userId))) {
@@ -104,6 +115,8 @@ function onConnection(socket: Socket): void {
             conversationId,
             senderId: userId,
             content: content.slice(0, MAX_CONTENT),
+            messageType: isImage ? 'image' : 'text',
+            fileUrl: isImage ? fileUrl : null,
           })
           .returning()
         await db.update(conversations).set({ lastMessageAt: msg.createdAt }).where(eq(conversations.id, conversationId))
