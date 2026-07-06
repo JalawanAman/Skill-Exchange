@@ -7,6 +7,7 @@ import { useAuth } from '@clerk/nextjs'
 import type { Socket } from 'socket.io-client'
 import { createChatSocket } from '@/lib/chat-socket'
 import { uploadImage, cloudinaryReady } from '@/lib/cloudinary'
+import BookingModal from '@/components/BookingModal'
 import { blockUser } from '../../matches/actions'
 import { loadOlderMessages, markConversationRead, reportUser } from '../actions'
 
@@ -56,6 +57,7 @@ export default function ChatWindow({
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [bookingOpen, setBookingOpen] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
 
   const nextBeforeRef = useRef<string | null>(initialNextBefore)
@@ -285,8 +287,16 @@ export default function ChatWindow({
           </p>
         </div>
 
+        {/* Book a session with this person */}
+        <button
+          onClick={() => setBookingOpen(true)}
+          className="ml-auto rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+        >
+          📅 Book
+        </button>
+
         {/* Overflow menu — block / report */}
-        <div className="relative ml-auto">
+        <div className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
             className="rounded-full px-2 py-1 text-xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700"
@@ -376,6 +386,15 @@ export default function ChatWindow({
           </button>
         </div>
       </div>
+
+      {bookingOpen && (
+        <BookingModal
+          teacherId={other.id}
+          teacherName={other.displayName ?? 'this user'}
+          conversationId={conversationId}
+          onClose={() => setBookingOpen(false)}
+        />
+      )}
     </div>
   )
 }
