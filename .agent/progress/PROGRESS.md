@@ -1,8 +1,8 @@
 # Build Progress
 
 **Founder:** Jalawan Aman Khan  
-**Last updated:** 2026-07-06  
-**Current phase:** M5 — Real-Time Chat ✅ built & deployed (real-time verified live; image upload + block/report done) · M6 (Session Booking) next
+**Last updated:** 2026-07-07  
+**Current phase:** M6 — Session Booking ✅ built & deployed (credit escrow proven via integration tests; live booking verified) · M7 next
 
 > **Testing note:** We're building **feature-first** — functionality now, deep
 > testing + UI polish later. "Done" below means **built, deployed, and
@@ -14,7 +14,7 @@
 ## Overall Status
 
 ```
-[■■■■■■■■■■] M1 · M2 · M3 · M4 · M5 built & deployed (real-time live) · M6 (Session Booking) next
+[■■■■■■■■■■] M1 · M2 · M3 · M4 · M5 · M6 built & deployed (credit escrow live) · M7 next
 ```
 
 | Milestone | Status | Notes |
@@ -25,7 +25,8 @@
 | M3 — Skills, Matching & Browse | ✅ Built & deployed | Matching engine live; AI skill-tags deferred |
 | M4 — Connections | ✅ Built & deployed | Requests/accept/decline + conversations; chat UI is M5 |
 | M5 — Real-Time Chat | ✅ Built & deployed | Live 2-way chat verified; image upload + block/report done |
-| M6–M9 | ⬜ | |
+| M6 — Session Booking | ✅ Built & deployed | Book from chat + credit escrow; 39 tests green, live-verified |
+| M7–M9 | ⬜ | |
 
 ---
 
@@ -144,11 +145,54 @@ auto-reconnect. **Messages** nav link.
 
 ---
 
+## M6 — Session Booking (built & deployed, escrow proven + live-verified)
+
+**Model** — a session is booked from a connected chat. Cost = `round(duration/6)` credits
+(10/hr). **Escrow = balance reduction:** booking writes an `escrow_lock` tx (negative) and drops the
+learner's balance; cancel writes an `escrow_release` tx (positive) and restores it. All money moves run
+inside a `db.transaction` with a `FOR UPDATE` lock on the learner row, so concurrent books can't
+double-spend. Booking is **idempotent** via a unique `(learnerId,teacherId,skillId,scheduledAt)` +
+early-return-existing + `onConflictDoNothing` race handling — a retry never double-charges.
+
+**Backend** — new `sessions` table (text-ID `ses_`, teacher/learner/skill refs, conversationId,
+scheduledAt, duration, format, creditsAmount, status, confirm flags, cancel fields). Extended
+`credit_tx_type` with `escrow_lock`/`escrow_release`; new `session_status` +
+`session_format` enums. Pure logic (`sessions.credits.ts`): credit math, booking validation
+(duration/format/future-time), state-machine transitions — 12 unit tests. Atomic DB ops
+(`sessions.service.ts`): `bookSession` / `acceptSession` / `cancelSession`, each raising a typed
+`SessionError` → HTTP status. API: `POST /sessions` (book — validates connection, block, skill-offered,
+self-book, credits), `GET /sessions?role=&status=`, `GET /:id`, `POST /:id/accept`, `POST /:id/cancel`;
+teacher gets a `session:update` socket push on book.
+
+**Frontend** — `BookingModal` from the chat header 📅 (skill picker from the teacher's offers,
+datetime, duration/format, live credit-cost preview) · `/sessions` page with Pending / Upcoming / Past
+tabs, `SessionCard` (accept / decline / cancel by role), balance reflects escrow · **Sessions** nav link.
+
+### GATE M6 — implemented (escrow proven by tests, happy path live-verified)
+- **Escrow (proven):** 6 DB integration tests (`sessions.integration.test.ts`) against the real DB —
+  book locks 10 credits (20→10) + writes `escrow_lock`, retry is idempotent (no second charge),
+  insufficient credits is rejected, teacher accept → `confirmed`, cancel refunds (10→20) + writes
+  `escrow_release`, double-cancel rejected. ✅
+- **Live:** booking a session from chat on the deployed site works end-to-end (modal → book → lands on
+  `/sessions`, balance drops). ✅
+- **Guards (code-verified):** can't book yourself, a non-connection, a blocked user, or a skill the
+  teacher doesn't offer; past times rejected.
+- **Quality:** tsc + ESLint green (api & web); **39 tests pass** (19 scorer + 2 chat + 12 credit-unit +
+  6 escrow-integration).
+- **Deferred:** 30-min-before reminder cron (needs GitHub Actions/scheduler); session completion →
+  reputation feeds M8; in-person/async format UX is minimal.
+
+> Escrow money-path is the one thing here that's genuinely test-proven (not just smoke-verified).
+> Live booking happy-path confirmed; accept/cancel live flows are code + integration-test verified,
+> not yet exhaustively clicked through on the deployed site.
+
+---
+
 ## Next
-1. **M6 — Session Booking** — book skill-swap sessions (slots + credit escrow). See `idea/docs/07_MILESTONES.md`.
+1. **M7** — see `idea/docs/07_MILESTONES.md`.
 
 ## Blockers
 - None.
 
 ## Decisions
-→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk`; 20-credit bonus; text-ID convention; neon-serverless driver; **M3 directional matches** (one row per viewer, diverges from doc 04's symmetric model — enables simple feed + independent dismiss); **M4 canonicalized conversation pair** (participantA < participantB so a pair maps to one conversation regardless of who accepts); **M5 in-memory presence** (single Railway instance; Upstash Redis is the horizontal-scale path) + **CORS `*.vercel.app` pattern** (auth is bearer-token, not cookie, so it's safe).
+→ See `decisions/DECISIONS.md`. Recent: Render→Railway; webhook at `/webhooks/clerk`; 20-credit bonus; text-ID convention; neon-serverless driver; **M3 directional matches** (one row per viewer, diverges from doc 04's symmetric model — enables simple feed + independent dismiss); **M4 canonicalized conversation pair** (participantA < participantB so a pair maps to one conversation regardless of who accepts); **M5 in-memory presence** (single Railway instance; Upstash Redis is the horizontal-scale path) + **CORS `*.vercel.app` pattern** (auth is bearer-token, not cookie, so it's safe); **M6 escrow = balance reduction** (booking debits the learner + writes an `escrow_lock` tx; cancel refunds + `escrow_release` — no separate held-funds column, kept atomic with a `FOR UPDATE` lock; idempotent via a unique booking key).
