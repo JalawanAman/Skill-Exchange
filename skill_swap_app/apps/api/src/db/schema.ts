@@ -25,6 +25,7 @@ export const creditTxTypeEnum = pgEnum('credit_tx_type', [
   'admin_adjustment',
   'escrow_lock', // M6: credits held when a session is booked (negative)
   'escrow_release', // M6: credits returned when a session is cancelled (positive)
+  'session_earning', // M7: teacher payout on completion (positive). Escrow-family; distinct from the vestigial 'session_earn' above (M1, unused).
 ])
 
 // M2: skill proficiency (offers) and target level (wants)
