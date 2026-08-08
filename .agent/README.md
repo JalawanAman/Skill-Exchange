@@ -33,6 +33,11 @@ It is the agent's own layer — progress tracking, context, decisions, and commu
 │   └── README.md
 ├── decisions/             ← log of every architectural or product decision made
 │   └── DECISIONS.md
+├── pending/               ← deferred tasks with strict trigger conditions (agent must remind)
+│   └── PENDING_TASKS.md
+├── prs/                   ← one description doc per pull request (PR-001, PR-002, …)
+│   ├── PR-001-m1-setup.md
+│   └── PR-002-dev-to-main.md
 └── generated/             ← agent-generated docs, drafts, plans not yet in founder docs
     └── README.md
 ```
@@ -49,7 +54,9 @@ It is the agent's own layer — progress tracking, context, decisions, and commu
 ### As the agent:
 - Update `progress/PROGRESS.md` after every milestone or significant task
 - Log every non-obvious decision in `decisions/DECISIONS.md` with the reason
-- Read `inbox/` at the start of every session
+- Save a description doc for every pull request in `prs/` (e.g. `PR-001-m1-setup.md`)
+- Record any intentionally **deferred** work in `pending/PENDING_TASKS.md` with a strict trigger condition, and proactively remind the founder when a trigger fires
+- Read `inbox/` and `pending/PENDING_TASKS.md` at the start of every session
 - Store useful context that should persist across sessions in `context/`
 - Put generated drafts or exploration docs in `generated/` — not in founder docs until approved
 

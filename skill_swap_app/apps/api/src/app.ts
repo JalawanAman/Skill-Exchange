@@ -4,19 +4,34 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import { clerkMiddleware } from '@clerk/express'
 import { webhookRoutes } from './routes/webhooks'
+import { userRoutes } from './routes/users'
+import { skillRoutes } from './routes/skills'
+import { availabilityRoutes } from './routes/availability'
+import { matchRoutes } from './routes/matches'
+import { blockRoutes } from './routes/blocks'
+import { connectionRoutes } from './routes/connections'
+import { conversationRoutes } from './routes/conversations'
+import { reportRoutes } from './routes/reports'
+import { sessionRoutes } from './routes/sessions'
+import { requestLogger } from './middleware/logging'
+import { logger } from './lib/logger'
+import { corsOrigin } from './lib/cors'
 
 const app: Express = express()
 
 // Trust Railway/Render proxy — required for rate limiter and real IP detection
 app.set('trust proxy', 1)
 
+// Request logging + correlation id — first, so every request is captured
+app.use(requestLogger)
+
 // Security headers
 app.use(helmet())
 
-// CORS — frontend only
+// CORS — localhost + explicit FRONTEND_URL + any *.vercel.app (see lib/cors)
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: corsOrigin,
     credentials: true,
   })
 )
@@ -50,10 +65,15 @@ app.use(clerkMiddleware({
 }))
 
 // Routes — added per milestone
-// app.use('/api/users', userRoutes)
-// app.use('/api/skills', skillRoutes)
-// app.use('/api/matches', matchRoutes)
-// app.use('/api/conversations', conversationRoutes)
+app.use('/api/users', userRoutes)
+app.use('/api/skills', skillRoutes)
+app.use('/api/availability', availabilityRoutes)
+app.use('/api/matches', matchRoutes)
+app.use('/api/blocks', blockRoutes)
+app.use('/api/connections', connectionRoutes)
+app.use('/api/conversations', conversationRoutes)
+app.use('/api/reports', reportRoutes)
+app.use('/api/sessions', sessionRoutes)
 // app.use('/api/sessions', sessionRoutes)
 // app.use('/api/credits', creditRoutes)
 // app.use('/api/reviews', reviewRoutes)
@@ -65,8 +85,12 @@ app.use((_req, res) => {
 })
 
 // Global error handler
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err.stack)
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  void logger.exception('unhandled error', err, {
+    source: 'http',
+    requestId: res.locals.requestId as string | undefined,
+    context: { method: req.method, path: req.originalUrl },
+  })
   res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' })
 })
 
